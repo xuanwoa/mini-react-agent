@@ -22,7 +22,17 @@ def get_current_time() -> str:
     return datetime.now().strftime("%Y%m%d%H%M%S")
 
 
-tools_map = {"calculate": calculate, "get_current_time": get_current_time}
+@tool
+def convert_currency(amount: float, rate: float) -> str:
+    """把美元按汇率换成人民币，比如 amount=128, rate=7.2"""
+    return str(amount * rate)
+
+
+tools_map = {
+    "calculate": calculate,
+    "get_current_time": get_current_time,
+    "convert_currency": convert_currency,
+}
 
 llm = ChatOpenAI(
     base_url=os.getenv("OPENAI_BASE_URL"),
@@ -30,9 +40,9 @@ llm = ChatOpenAI(
     model=os.getenv("OPENAI_MODEL_NAME"),
 )
 
-llm_bind_tools = llm.bind_tools([get_current_time, calculate])
+llm_bind_tools = llm.bind_tools([get_current_time, calculate, convert_currency])
 
-messages = [HumanMessage("现在几点？再帮我算 23*1.08 等于多少")]
+messages = [HumanMessage("现在几点？再帮我算 128 美元按 7.2 换成人民币是多少")]
 
 for i in range(5):
     logger.debug(i)
