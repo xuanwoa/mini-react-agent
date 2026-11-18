@@ -20,6 +20,7 @@ dev = [
     "pytest",
 ]
 
-[build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+# 脚本合集，不是可安装的包：不要 build 后端，
+# 否则 setuptools 会把根目录 10 个脚本当成要打包的模块而报错
+[tool.uv]
+package = false
