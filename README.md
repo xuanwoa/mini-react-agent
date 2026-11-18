@@ -7,9 +7,11 @@
 ## 运行
 
 ```bash
-pip install langchain-openai python-dotenv loguru
+uv sync
 python mini_agent.py
 ```
+
+依赖都在 `pyproject.toml` 里，`uv sync` 会建 `.venv` 并装好全部依赖，还会生成 `uv.lock` 锁定精确版本。
 
 需要 `.env` 里配好 `OPENAI_BASE_URL`、`OPENAI_API_KEY`、`OPENAI_MODEL_NAME`（不要提交 `.env`）。
 
