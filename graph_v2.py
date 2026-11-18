@@ -155,3 +155,6 @@ for q in questions:
                            "needs_policy": False, "order_result": "",
                            "policy_context": "", "answer": ""})
     logger.debug(f"最终答案：{result['answer']}")
+
+# 把图画出来：终端直接打印 ASCII 版，不用装任何东西
+print(graph.get_graph().draw_ascii())
