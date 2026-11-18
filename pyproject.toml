@@ -2,7 +2,7 @@
 name = "mini-react-agent"
 version = "0.1.0"
 description = "商家对话助手：手写 ReAct + create_agent + RAG + 结构化输出 + 评估"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "langchain",
     "langchain-openai",
