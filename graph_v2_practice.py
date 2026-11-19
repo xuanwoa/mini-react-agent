@@ -56,63 +56,93 @@ def fake_check_order(order_id):
     return "查询不到订单，请确认订单号。"
 
 
-# TODO 1：State 是整张图共用的黑板，写全 7 个字段
 # question: str / order_id: str / needs_order: bool / needs_policy: bool
 # order_result: str / policy_context: str / answer: str
 class AgentState(TypedDict):
-    pass
+    question: str
+    order_id: str
+    needs_order: bool
+    needs_policy: bool
+    order_result: str
+    policy_context: str
+    answer: str
 
 
-# TODO 2：分类结果模型，3 个字段
 # needs_order: bool / needs_policy: bool / order_id: str（默认 ""）
 class RouteDecision(BaseModel):
-    pass
+    needs_order: bool = Field(description="问题是否需要查订单状态")
+    needs_policy: bool = Field(description="问题是否需要查店铺资料")
+    order_id: str = Field(default="", description="问题里提到的订单号，没有就空字符串")
 
 
-# TODO 3：classify 节点
 # 用 llm.with_structured_output(RouteDecision) 判断，返回 dict 写回
 # needs_order / needs_policy / order_id
 def classify(state):
-    raise NotImplementedError("TODO 3：先写 classify 节点")
+    classifier = llm.with_structured_output(RouteDecision)
+    decision = classifier.invoke(f"判断问题需要查询什么工具，问题：{state['question']}")
+    logger.debug(f"RouteDecision: {decision}")
+    return {
+        "needs_order": decision.needs_order,
+        "needs_policy": decision.needs_policy,
+        "order_id": decision.order_id,
+    }
 
 
-# TODO 4：check_order 节点，调 fake_check_order，返回 {"order_result": ...}
 def check_order_node(state):
-    raise NotImplementedError("TODO 4：先写 check_order 节点")
+    order_result = fake_check_order(state["order_id"])
+    logger.debug(f"节点 check_order：{order_result}")
+    return {"order_result": order_result}
 
 
-# TODO 5：search_docs 节点，用 retriever 搜，返回 {"policy_context": ...}
 def search_docs_node(state):
-    raise NotImplementedError("TODO 5：先写 search_docs 节点")
+    docs = retriever.invoke(f"{state["question"]}")
+    context = "\n".join(d.page_content for d in docs)
+    logger.debug(f"节点 search_docs：搜到 {len(docs)} 条")
+    return {"policy_context": context}
 
 
-# TODO 6：answer 节点，把 order_result 和 policy_context 拼起来喂给模型
 # 只根据资料回答，返回 {"answer": ...}
 def answer_node(state):
-    raise NotImplementedError("TODO 6：先写 answer 节点")
+    parts = []
+    if state["order_result"]:
+        parts.append(state["order_result"])
+    if state["policy_context"]:
+        parts.append(state["policy_context"])
+    result = llm.invoke(f"根据如下资料回答，不要编造：{" ".join(parts)}，问题：{state["question"]}")
+    return {"answer": result}
 
 
-# TODO 7：路由函数 1——分类完去哪
 # 注意：if 的顺序就是优先级，两个都是 True 时先去查订单
 def route_after_classify(state):
-    raise NotImplementedError("TODO 7：先写 route_after_classify")
+    if state["needs_order"]:
+        return "check_order"
+    if state["needs_policy"]:
+        return "search_docs"
+    return "answer"
 
 
-# TODO 8：路由函数 2——查完订单去哪
 def route_after_order(state):
-    raise NotImplementedError("TODO 8：先写 route_after_order")
+    if state["needs_policy"]:
+        return "search_docs"
+    return "answer"
 
 
-# TODO 9：拼图——4 个节点、START 边、两条条件边、两条普通边、compile
-# builder = StateGraph(AgentState)
-# builder.add_node(...) x 4
-# builder.add_edge(START, "classify")
-# builder.add_conditional_edges("classify", route_after_classify, {...})
-# builder.add_conditional_edges("check_order", route_after_order, {...})
-# builder.add_edge("search_docs", "answer")
-# builder.add_edge("answer", END)
-# graph = builder.compile()
-raise NotImplementedError("TODO 9：先把图拼出来，再跑下面三道题")
+builder = StateGraph(AgentState)
+builder.add_node("classify", classify)
+builder.add_node("check_order", check_order_node)
+builder.add_node("search_docs", search_docs_node)
+builder.add_node("answer", answer_node)
+
+builder.add_edge(START, "classify")
+builder.add_conditional_edges("classify", route_after_classify, {"check_order": "check_order",
+                                                                 "search_docs": "search_docs",
+                                                                 "answer": "answer"})
+builder.add_conditional_edges("check_order", route_after_order, {"search_docs": "search_docs",
+                                                                 "answer": "answer"})
+builder.add_edge("search_docs", "answer")
+builder.add_edge("answer", END)
+graph = builder.compile()
+
 
 questions = [
     "订单 20261116001 到哪了？",
