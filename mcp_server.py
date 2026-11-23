@@ -15,7 +15,7 @@ POLICIES = {
 
 @mcp.tool()
 def check_order(order_id: str) -> str:
-    """按订单号查订单状态，比如 20261116001。"""
+    """按订单号查订单状态，比如 20261116001。用户问订单到哪了、发货了没，就用这个工具。"""
     if order_id == "20261116001":
         return "订单 20261116001：已发货，快递运输中，预计明天送达。"
     return "查询不到订单，请确认订单号。"
@@ -23,7 +23,7 @@ def check_order(order_id: str) -> str:
 
 @mcp.tool()
 def search_shop_docs(question: str) -> str:
-    """按问题查店铺政策：退货、换货、运费、保修、发票、客服时间、发货时间。"""
+    """查店铺政策。用户问退货、退了怎么办、怎么退、换货、运费、保修、发票、客服时间、发货时间时，必须用这个工具查政策，不要凭记忆回答。"""
     hits = [v for k, v in POLICIES.items() if k in question or k[0] in question]
     return "\n".join(hits) if hits else "没有找到相关资料，请联系客服"
 

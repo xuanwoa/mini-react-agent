@@ -25,7 +25,7 @@ async def main():
         agent = create_agent(
             model=llm,
             tools=tools,
-            system_prompt="你是商家客服助手，只根据工具返回的内容回答，不要编造。",
+            system_prompt="你是商家客服助手，只根据工具返回的内容回答，不要编造。问题里同时有订单号和退货、换货、政策时，必须先调 check_order 查订单，再调 search_shop_docs 查政策，两个结果都拿到再回答，缺一个都不行。",
         )
         result = await agent.ainvoke(
             {"messages": [{"role": "user", "content": "订单 20261116001 退了怎么办？"}]}
